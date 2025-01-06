@@ -37,13 +37,12 @@ func (s *Server) Start() {
 
 	log.Printf("Server started on port %s. Waiting for requests...", config.AppConfig.Port)
 	if err := s.httpServer.ListenAndServe(); err != nil {
-		log.Printf("Server failed: %v", err)
+		log.Printf("Server stopped: %v", err)
 	}
 }
 
 func (s *Server) Stop() {
 	log.Println("Graceful shutdown requested.")
-	s.db.Stop()
 	s.httpServer.Shutdown(context.Background())
 }
 
