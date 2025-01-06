@@ -20,7 +20,7 @@ func LoadConfig() error {
 	}
 
 	AppConfig.AuthKey = getEnv("AUTH_KEY", "omgwow")
-	AppConfig.DBPath = getEnv("DB_PATH", "./catbox-scanner-db.db")
+	AppConfig.DBPath = getEnv("DB_PATH", "./catbox-scanner.sqlite")
 	AppConfig.Port = getEnv("PORT", "6969")
 
 	return nil
