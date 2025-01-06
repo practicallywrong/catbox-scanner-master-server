@@ -4,6 +4,7 @@ import (
 	"catbox-scanner-master/internal/config"
 	"catbox-scanner-master/internal/database"
 	"context"
+	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
@@ -53,23 +54,25 @@ func (s *Server) handleAddEntry(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := r.ParseForm(); err != nil {
-		http.Error(w, "Failed to parse entry", http.StatusBadRequest)
+	var payload struct {
+		ID  string `json:"id"`
+		Ext string `json:"ext"`
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+		http.Error(w, "Failed to parse JSON", http.StatusBadRequest)
 		return
 	}
 
-	id := r.FormValue("id")
-	ext := r.FormValue("ext")
-
-	if id == "" || ext == "" {
+	if payload.ID == "" || payload.Ext == "" {
 		http.Error(w, "Missing id or ext", http.StatusBadRequest)
 		return
 	}
 
-	s.db.InsertEntry(id, ext)
+	s.db.InsertEntry(payload.ID, payload.Ext)
 
 	w.WriteHeader(http.StatusOK)
-	fmt.Fprintf(w, "Entry added: ID=%s, EXT=%s", id, ext)
+	fmt.Fprintf(w, "Entry added: ID=%s, EXT=%s", payload.ID, payload.Ext)
 }
 
 func (s *Server) handleGetCount(w http.ResponseWriter, r *http.Request) {
