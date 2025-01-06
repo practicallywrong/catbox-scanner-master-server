@@ -1,3 +1,4 @@
 /.env
 /catbox-scanner-master
 /catbox-scanner.sqlite
+/catbox-scanner.sqlite*
