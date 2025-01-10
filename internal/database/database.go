@@ -88,6 +88,16 @@ func (db *Database) GetTotalRows() (int, error) {
 	return count, nil
 }
 
+func (db *Database) GetRandomEntryByExtension(ext string) (Entry, error) {
+	var entry Entry
+	query := "SELECT id, ext FROM found_ids WHERE ext = ? ORDER BY RANDOM() LIMIT 1;"
+	err := db.conn.QueryRow(query, ext).Scan(&entry.ID, &entry.Ext)
+	if err != nil {
+		return Entry{}, err
+	}
+	return entry, nil
+}
+
 func (db *Database) Stop() {
 	close(db.quit)
 	db.wg.Wait()

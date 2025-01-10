@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"regexp"
 
 	"github.com/gorilla/mux"
 )
@@ -27,6 +28,7 @@ func (s *Server) Start() {
 	r := mux.NewRouter()
 	r.HandleFunc("/add", s.handleAddEntry).Methods("POST")
 	r.HandleFunc("/count", s.handleGetCount).Methods("GET")
+	r.HandleFunc("/random", s.handleGetRandomLink).Methods("GET")
 
 	addr := fmt.Sprintf(":%s", config.AppConfig.Port)
 
@@ -83,4 +85,36 @@ func (s *Server) handleGetCount(w http.ResponseWriter, r *http.Request) {
 
 	w.WriteHeader(http.StatusOK)
 	fmt.Fprintf(w, "%d", rows)
+}
+
+func (s *Server) handleGetRandomLink(w http.ResponseWriter, r *http.Request) {
+	authKey := r.URL.Query().Get("auth")
+	if authKey != config.AppConfig.AuthKey {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	ext := r.URL.Query().Get("ext")
+	if ext == "" {
+		http.Error(w, "Missing ext parameter", http.StatusBadRequest)
+		return
+	}
+
+	// Sanitize the extension input
+	validExt := regexp.MustCompile(`^[a-zA-Z0-9]{1,10}$`)
+	if !validExt.MatchString(ext) {
+		http.Error(w, "Invalid extension format", http.StatusBadRequest)
+		return
+	}
+
+	entry, err := s.db.GetRandomEntryByExtension(ext)
+	if err != nil {
+		http.Error(w, "No entries found with the given extension", http.StatusNotFound)
+		return
+	}
+
+	link := fmt.Sprintf("https://files.catbox.moe/%s.%s", entry.ID, entry.Ext)
+
+	w.WriteHeader(http.StatusOK)
+	fmt.Fprint(w, link)
 }
