@@ -101,4 +101,5 @@ func (db *Database) GetRandomEntryByExtension(ext string) (Entry, error) {
 func (db *Database) Stop() {
 	close(db.quit)
 	db.wg.Wait()
+	db.conn.Close()
 }
