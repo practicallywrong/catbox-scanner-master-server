@@ -88,14 +88,40 @@ func (db *Database) GetTotalRows() (int, error) {
 	return count, nil
 }
 
-func (db *Database) GetRandomEntryByExtension(ext string) (Entry, error) {
-	var entry Entry
-	query := "SELECT id, ext FROM found_ids WHERE ext = ? ORDER BY RANDOM() LIMIT 1;"
-	err := db.conn.QueryRow(query, ext).Scan(&entry.ID, &entry.Ext)
+func (db *Database) GetRandomEntries(count int) ([]Entry, error) {
+	rows, err := db.conn.Query("SELECT id, ext FROM found_ids ORDER BY RANDOM() LIMIT ?", count)
 	if err != nil {
-		return Entry{}, err
+		return nil, err
 	}
-	return entry, nil
+	defer rows.Close()
+
+	var entries []Entry
+	for rows.Next() {
+		var entry Entry
+		if err := rows.Scan(&entry.ID, &entry.Ext); err != nil {
+			return nil, err
+		}
+		entries = append(entries, entry)
+	}
+	return entries, nil
+}
+
+func (db *Database) GetRandomEntriesByExtension(ext string, count int) ([]Entry, error) {
+	rows, err := db.conn.Query("SELECT id, ext FROM found_ids WHERE ext = ? ORDER BY RANDOM() LIMIT ?", ext, count)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var entries []Entry
+	for rows.Next() {
+		var entry Entry
+		if err := rows.Scan(&entry.ID, &entry.Ext); err != nil {
+			return nil, err
+		}
+		entries = append(entries, entry)
+	}
+	return entries, nil
 }
 
 func (db *Database) Stop() {

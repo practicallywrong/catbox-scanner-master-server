@@ -9,6 +9,8 @@ import (
 	"log"
 	"net/http"
 	"regexp"
+	"strconv"
+	"strings"
 
 	"github.com/gorilla/mux"
 )
@@ -95,26 +97,42 @@ func (s *Server) handleGetRandomLink(w http.ResponseWriter, r *http.Request) {
 	}
 
 	ext := r.URL.Query().Get("ext")
+	countParam := r.URL.Query().Get("count")
+
+	count := 1
+	if countParam != "" {
+		var err error
+		count, err = strconv.Atoi(countParam)
+		if err != nil || count < 1 || count > 10 {
+			http.Error(w, "Invalid count parameter. Must be between 1 and 10.", http.StatusBadRequest)
+			return
+		}
+	}
+
+	var entries []database.Entry
+	var err error
 	if ext == "" {
-		http.Error(w, "Missing ext parameter", http.StatusBadRequest)
+		entries, err = s.db.GetRandomEntries(count)
+	} else {
+		validExt := regexp.MustCompile(`^[a-zA-Z0-9]{1,10}$`)
+		if !validExt.MatchString(ext) {
+			http.Error(w, "Invalid extension format", http.StatusBadRequest)
+			return
+		}
+		entries, err = s.db.GetRandomEntriesByExtension(ext, count)
+	}
+
+	if err != nil || len(entries) == 0 {
+		http.Error(w, "No entries found", http.StatusNotFound)
 		return
 	}
 
-	// Sanitize the extension input
-	validExt := regexp.MustCompile(`^[a-zA-Z0-9]{1,10}$`)
-	if !validExt.MatchString(ext) {
-		http.Error(w, "Invalid extension format", http.StatusBadRequest)
-		return
+	links := []string{}
+	for _, entry := range entries {
+		link := fmt.Sprintf("https://files.catbox.moe/%s.%s", entry.ID, entry.Ext)
+		links = append(links, link)
 	}
-
-	entry, err := s.db.GetRandomEntryByExtension(ext)
-	if err != nil {
-		http.Error(w, "No entries found with the given extension", http.StatusNotFound)
-		return
-	}
-
-	link := fmt.Sprintf("https://files.catbox.moe/%s.%s", entry.ID, entry.Ext)
 
 	w.WriteHeader(http.StatusOK)
-	fmt.Fprint(w, link)
+	w.Write([]byte(strings.Join(links, "\n")))
 }
