@@ -78,6 +78,12 @@ func (db *Database) InsertEntry(id, ext string) {
 	db.queue <- Entry{ID: id, Ext: ext}
 }
 
+func (db *Database) RemoveEntry(id, ext string) error {
+	statement := "DELETE FROM found_ids WHERE id = ? AND ext = ?;"
+	_, err := db.conn.Exec(statement, id, ext)
+	return err
+}
+
 func (db *Database) GetTotalRows() (int, error) {
 	var count int
 	query := "SELECT COUNT(*) FROM found_ids;"
