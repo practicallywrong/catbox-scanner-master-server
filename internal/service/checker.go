@@ -100,9 +100,9 @@ func (lc *LinkChecker) checkLink(url string) bool {
 	resp, err := lc.client.Head(url)
 	if err != nil {
 		log.Printf("Error checking link: %s, %v", url, err)
-		return false
+		return true // dont remove by default
 	}
 	defer resp.Body.Close()
 
-	return resp.StatusCode == http.StatusOK
+	return resp.StatusCode != http.StatusNotFound
 }
